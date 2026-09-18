@@ -21,61 +21,65 @@
 
 Quarklytics enforces strict separation of concerns across a 3-layer relational database architecture designed for auditable ingestion, structural normalization, and zero-drift analytical querying:
 
-```mermaid
-flowchart TD
-    subgraph SOURCEDATA ["Data Ingestion Layer"]
-        Kaggle["Olist Dataset (9 CSVs, 1.1M+ Records)"] --> Ingest["Python Streaming Ingestion (psycopg3)"]
-    end
-
-    subgraph RAW ["Layer 1: raw Schema (Source Fidelity)"]
-        Ingest --> R_Cust["raw.customers"]
-        Ingest --> R_Geo["raw.geolocation"]
-        Ingest --> R_Items["raw.order_items"]
-        Ingest --> R_Pay["raw.order_payments"]
-        Ingest --> R_Rev["raw.order_reviews"]
-        Ingest --> R_Orders["raw.orders"]
-        Ingest --> R_Prod["raw.products"]
-        Ingest --> R_Sell["raw.sellers"]
-        Ingest --> R_Cat["raw.product_category_translation"]
-    end
-
-    subgraph VALIDATION ["Data Quality & Validation Engine"]
-        R_Orders --> Val1["Row Count Audits"]
-        R_Cust --> Val2["Referential Integrity"]
-        R_Items --> Val3["Null Profile Analysis"]
-        R_Pay --> Val4["Domain & Check Constraints"]
-    end
-
-    subgraph CORE ["Layer 2: core Schema (Relational 3NF)"]
-        Val1 & Val2 & Val3 & Val4 --> C_Cust["core.customers"]
-        Val1 & Val2 & Val3 & Val4 --> C_Orders["core.orders"]
-        Val1 & Val2 & Val3 & Val4 --> C_Items["core.order_items"]
-        Val1 & Val2 & Val3 & Val4 --> C_Payments["core.order_payments"]
-        Val1 & Val2 & Val3 & Val4 --> C_Reviews["core.order_reviews (Composite PK)"]
-        Val1 & Val2 & Val3 & Val4 --> C_Products["core.products"]
-        Val1 & Val2 & Val3 & Val4 --> C_Sellers["core.sellers"]
-    end
-
-    subgraph ANALYTICS ["Layer 3: analytics Schema (Kimball Star Schema)"]
-        C_Orders & C_Items & C_Payments & C_Reviews --> FactOrders["fact_orders (Grain: 1 row / order)"]
-        C_Items & C_Orders --> FactItems["fact_order_items (Grain: 1 row / order item)"]
-        C_Cust --> DimCust["dim_customer (Grain: customer_unique_id)"]
-        C_Products --> DimProd["dim_product (Clean English Categories)"]
-        C_Sellers --> DimSell["dim_seller (City / State Geography)"]
-        Series["generate_series('2016-01-01', '2018-12-31')"] --> DimDate["dim_date (Standardized Calendar)"]
-    end
-
-    subgraph SERVING ["Serving & Consumption Layer"]
-        FactOrders & FactItems & DimCust & DimProd & DimSell & DimDate --> Views["Standard SQL Views"]
-        FactOrders & FactItems & DimCust & DimProd & DimSell & DimDate --> MViews["Materialized Aggregations (Auto-Clustered)"]
-        FactOrders & FactItems & DimCust & DimProd & DimSell & DimDate --> IndexOpt["Targeted Composite & Covering Indexes"]
-    end
-
-    subgraph INTERFACE ["Consumer Interfaces"]
-        Views & MViews & IndexOpt --> Queries["42 Advanced SQL Queries (Q01 - Q42)"]
-        Views & MViews & IndexOpt --> Studio["Interactive Web Studio (FastAPI + Chart.js)"]
-        Views & MViews & IndexOpt --> Benchmarks["EXPLAIN (ANALYZE, BUFFERS) Benchmark Arena"]
-    end
+```text
+======================================================================================================
+                                     1. DATA INGESTION LAYER
+   Kaggle Brazilian E-Commerce Public Dataset by Olist (9 CSVs, 1.1M+ records, SHA-256 verified)
+======================================================================================================
+                                                │
+                                                │ Streaming COPY via psycopg 3
+                                                ▼
+======================================================================================================
+                               2. RAW SCHEMA (SOURCE-FIDELITY STAGING)
+   • raw.customers             • raw.order_items           • raw.orders           • raw.sellers
+   • raw.geolocation           • raw.order_payments        • raw.products         • raw.translations
+   • raw.order_reviews
+   [Design Rule: 100% text-typed columns to guarantee ingestion auditability without data truncation]
+======================================================================================================
+                                                │
+                                                │ Data Quality Assertions & Transformations
+                                                ▼
+======================================================================================================
+                           3. DATA QUALITY & INTEGRITY VALIDATION ENGINE
+   • Row Count Audits          • Foreign Key Orphan Checks (0 orphans)    • Null Profile Analysis
+   • Domain & Boundary Rules   • Temporal Monotonicity & Date Lags        • Financial Balance Invariants
+======================================================================================================
+                                                │
+                                                │ Strongly-Typed Casting & Relational Integrity
+                                                ▼
+======================================================================================================
+                               4. CORE SCHEMA (NORMALIZED RELATIONAL 3NF)
+   • core.customers            • core.orders (status, timestamps)         • core.products
+   • core.order_items          • core.order_payments                      • core.sellers
+   • core.order_reviews [Composite PK: (review_id, order_id) resolving multi-vendor basket collision]
+======================================================================================================
+                                                │
+                                                │ Dimensional Modeling (Kimball Star Schema)
+                                                ▼
+======================================================================================================
+                          5. ANALYTICS SCHEMA (DIMENSIONAL STAR SCHEMA)
+   Dimensions:
+     • dim_customer  ── Grain: customer_unique_id (True entity resolution across transactions)
+     • dim_product   ── Grain: product_id (Portuguese to English translations, physical volume)
+     • dim_seller    ── Grain: seller_id (City, state, regional fulfillment clustering)
+     • dim_date      ── Grain: date_key (Calendar series via generate_series: 2016-01-01 to 2018-12-31)
+   Facts:
+     • fact_orders       ── Grain: 1 row per order (pre-aggregated payments, reviews, and freight)
+     • fact_order_items  ── Grain: 1 row per order line item (granular price, freight, seller keys)
+======================================================================================================
+                                                │
+                                                │ Caching, Indexing & Serving
+                                                ▼
+======================================================================================================
+                          6. SERVING, PERFORMANCE & CONSUMPTION INTERFACES
+   ┌───────────────────────────────────┬───────────────────────────────────┬────────────────────────┐
+   │        OPTIMIZATION LAYER         │         SQL CURRICULUM            │   INTERACTIVE STUDIO   │
+   ├───────────────────────────────────┼───────────────────────────────────┼────────────────────────┤
+   │ • Materialized Views (Clustered)  │ • 42 Advanced Analytical Queries  │ • FastAPI Async Engine │
+   │ • Covering B-Tree Indexes         │ • Foundations, Joins, CTEs        │ • Glassmorphic Dark UI │
+   │ • GIN Trigram Text Search         │ • Window Functions, Cohorts, RFM  │ • Dynamic Chart.js     │
+   │ • EXPLAIN ANALYZE Buffer Profiler │ • PostgreSQL 16 FILTER/Percentiles│ • NL Query Assistant   │
+   └───────────────────────────────────┴───────────────────────────────────┴────────────────────────┘
 ```
 
 ---
