@@ -17,7 +17,7 @@
 
 ---
 
-## 🏛️ System Architecture
+## System Architecture
 
 Quarklytics enforces strict separation of concerns across a 3-layer relational database architecture designed for auditable ingestion, structural normalization, and zero-drift analytical querying:
 
@@ -84,7 +84,7 @@ Quarklytics enforces strict separation of concerns across a 3-layer relational d
 
 ---
 
-## ⚡ Measured Query Performance Benchmarks
+## Measured Query Performance Benchmarks
 
 All benchmarks were measured on a real **PostgreSQL 16.15** database running against the **complete 1.1M+ row Olist dataset**, utilizing `EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)` over 5 sequential runs per query variant.
 
@@ -104,7 +104,7 @@ Raw serialized JSON execution plans and CSV benchmark evidence are stored in [`e
 
 ---
 
-## 💻 Interactive Analytics Studio Web Application
+## Interactive Analytics Studio Web Application
 
 Quarklytics includes a turnkey, single-page **Interactive Analytics Studio** built with FastAPI and a modern glassmorphic dark UI.
 
@@ -125,7 +125,7 @@ Open **`http://127.0.0.1:8000`** in your browser.
 
 ---
 
-## 🎯 42-Query Analytical Curriculum
+## 42-Query Analytical Curriculum
 
 The SQL curriculum in [`sql/04_analytics/`](sql/04_analytics/) spans 8 core analytics engineering domains:
 
@@ -142,7 +142,7 @@ The SQL curriculum in [`sql/04_analytics/`](sql/04_analytics/) spans 8 core anal
 
 ---
 
-## 🛡️ Production Engineering & Data Quality
+## Production Engineering & Data Quality
 
 ### 1. Composite Primary Key Discovery in Olist Reviews
 During schema profiling of `olist_order_reviews_dataset.csv`, 789 reviews were discovered sharing identical `review_id` values across separate `order_id` records (caused by consolidated checkout reviews for multi-vendor baskets). Rather than silently dropping or deduping records, the core schema models a true composite primary key:
@@ -161,7 +161,7 @@ In Olist, `customer_id` is merely a per-transaction session token. All cohort an
 
 ---
 
-## 🚀 Quickstart & Setup
+## Quickstart & Setup
 
 ### Prerequisites
 - Python 3.11+
@@ -217,7 +217,7 @@ python scripts/run_all_queries.py
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```text
 quarklytics/
@@ -263,7 +263,7 @@ quarklytics/
 
 ---
 
-## 🧪 Testing & CI/CD
+## Testing & CI/CD
 
 Quarklytics includes an automated CI/CD pipeline running on GitHub Actions (`.github/workflows/ci.yml`):
 - Spins up a dedicated PostgreSQL container service.
@@ -280,7 +280,7 @@ Quarklytics includes an automated CI/CD pipeline running on GitHub Actions (`.gi
 
 ---
 
-## 📜 License & Provenance
+## License & Provenance
 
 - **License:** MIT License.
 - **Data Source:** [Olist Brazilian E-Commerce Public Dataset](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) released under CC BY-NC-SA 4.0.
