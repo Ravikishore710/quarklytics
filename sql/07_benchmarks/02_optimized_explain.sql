@@ -1,0 +1,1 @@
+-- Run the same benchmark queries after targeted indexes and ANALYZE.

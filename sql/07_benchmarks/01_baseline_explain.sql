@@ -1,0 +1,3 @@
+-- The Python runner executes each sql/07_benchmarks/Q*.sql with:
+-- EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) <query>;
+-- Run before sql/06_indexes/02_optimized.sql.

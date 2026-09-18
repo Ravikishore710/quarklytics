@@ -1,0 +1,23 @@
+.env
+.venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+.DS_Store
+.vscode/
+.idea/
+
+# Local PostgreSQL and generated runtime files
+postgres-data/
+*.log
+
+# Raw source data is intentionally not versioned
+data/raw/*.csv
+data/raw/*.zip
+data/checksums/*.sha256
+
+# Keep small measured benchmark evidence and representative results
+!evaluation/query_benchmarks.csv
+!evaluation/results/selected_results/*.json
+!evaluation/results/selected_results/*.csv
+

@@ -1,0 +1,4 @@
+product_id,product_category_name,product_name_lenght,product_description_lenght,product_photos_qty,product_weight_g,product_length_cm,product_height_cm,product_width_cm
+p001,beleza_saude,10,100,2,500,20,10,10
+p002,perfumaria,12,120,1,300,15,8,8
+p003,esporte_lazer,14,140,3,800,30,12,12

@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quarklytics — Executive SQL Analytics Studio</title>
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            },
+            dark: {
+              950: '#060911',
+              900: '#0b0f19',
+              850: '#101726',
+              800: '#161f33',
+              700: '#1e293b',
+            }
+          },
+          boxShadow: {
+            'glow-indigo': '0 0 25px -5px rgba(99, 102, 241, 0.4)',
+            'glow-cyan': '0 0 25px -5px rgba(6, 182, 212, 0.4)',
+            'glow-emerald': '0 0 25px -5px rgba(16, 185, 129, 0.3)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #060911;
+      color: #f1f5f9;
+      background-image: 
+        radial-gradient(at 15% 15%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+        radial-gradient(at 85% 20%, rgba(6, 182, 212, 0.08) 0px, transparent 50%),
+        radial-gradient(at 50% 80%, rgba(139, 92, 246, 0.08) 0px, transparent 60%);
+      background-attachment: fixed;
+    }
+    .glass-card {
+      background: rgba(16, 23, 38, 0.72);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+    .glass-input {
+      background: rgba(11, 15, 25, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .glass-input:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0b0f19;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
+    .pulse-dot {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.15); }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
+
+  <!-- TOP NAVIGATION HEADER -->
+  <header class="sticky top-0 z-50 border-b border-white/10 bg-dark-950/80 backdrop-blur-xl">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <!-- Logo & Brand -->
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 via-indigo-500 to-cyan-400 p-[1px] shadow-glow-indigo flex items-center justify-center">
+          <div class="w-full h-full bg-dark-950 rounded-[11px] flex items-center justify-center">
+            <i data-lucide="atom" class="w-5 h-5 text-cyan-400"></i>
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="font-extrabold text-xl tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">QUARKLYTICS</span>
+            <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/30">Studio 2.0</span>
+          </div>
+          <p class="text-[11px] text-slate-400 font-medium">PostgreSQL 16.15 • Advanced Analytics Engineering</p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="hidden md:flex items-center space-x-1 bg-dark-900/90 p-1 rounded-xl border border-white/10">
+        <button onclick="switchTab('studio')" id="tab-btn-studio" class="tab-btn px-4 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 transition-all duration-200 bg-brand-600 text-white shadow-sm">
+          <i data-lucide="terminal" class="w-3.5 h-3.5"></i>
+          <span>Query Studio</span>
+        </button>
+        <button onclick="switchTab('curriculum')" id="tab-btn-curriculum" class="tab-btn px-4 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all duration-200 flex items-center space-x-2">
+          <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
+          <span>Curriculum (Q01–Q42)</span>
+        </button>
+        <button onclick="switchTab('benchmarks')" id="tab-btn-benchmarks" class="tab-btn px-4 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all duration-200 flex items-center space-x-2">
+          <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-400"></i>
+          <span>Performance Arena</span>
+        </button>
+        <button onclick="switchTab('catalog')" id="tab-btn-catalog" class="tab-btn px-4 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all duration-200 flex items-center space-x-2">
+          <i data-lucide="database" class="w-3.5 h-3.5"></i>
+          <span>Data Catalog</span>
+        </button>
+      </nav>
+
+      <!-- Connection Status Badge -->
+      <div class="flex items-center space-x-3">
+        <div class="flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span>
+          <span>Online</span>
+          <span class="text-emerald-500/50">|</span>
+          <span class="text-slate-300 font-mono text-[11px]">1.1M+ Rows</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- KPI STRIP -->
+    <section id="kpi-strip" class="grid grid-cols-2 md:grid-cols-5 gap-3.5">
+      <!-- Card 1: Total Orders -->
+      <div class="glass-card rounded-2xl p-4 relative overflow-hidden group hover:border-brand-500/40 transition-all duration-300">
+        <div class="flex items-center justify-between text-slate-400 mb-2">
+          <span class="text-xs font-medium uppercase tracking-wider">Total Orders</span>
+          <div class="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 group-hover:scale-110 transition-transform">
+            <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+          </div>
+        </div>
+        <div class="text-2xl font-extrabold text-white font-mono tracking-tight" id="kpi-orders">99,441</div>
+        <div class="text-[11px] text-emerald-400 font-medium flex items-center mt-1">
+          <i data-lucide="check" class="w-3 h-3 mr-1"></i> 100% Brazilian E-Commerce
+        </div>
+      </div>
+
+      <!-- Card 2: Total Revenue / GMV -->
+      <div class="glass-card rounded-2xl p-4 relative overflow-hidden group hover:border-cyan-500/40 transition-all duration-300">
+        <div class="flex items-center justify-between text-slate-400 mb-2">
+          <span class="text-xs font-medium uppercase tracking-wider">Total Value (GMV)</span>
+          <div class="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400 group-hover:scale-110 transition-transform">
+            <i data-lucide="dollar-sign" class="w-4 h-4"></i>
+          </div>
+        </div>
+        <div class="text-2xl font-extrabold text-white font-mono tracking-tight" id="kpi-gmv">R$ 15.84M</div>
+        <div class="text-[11px] text-slate-400 font-medium mt-1">
+          R$ 13.59M items + R$ 2.25M freight
+        </div>
+      </div>
+
+      <!-- Card 3: Repeat Customer Rate -->
+      <div class="glass-card rounded-2xl p-4 relative overflow-hidden group hover:border-purple-500/40 transition-all duration-300">
+        <div class="flex items-center justify-between text-slate-400 mb-2">
+          <span class="text-xs font-medium uppercase tracking-wider">Repeat Rate</span>
+          <div class="p-1.5 rounded-lg bg-purple-500/10 text-purple-400 group-hover:scale-110 transition-transform">
+            <i data-lucide="repeat" class="w-4 h-4"></i>
+          </div>
+        </div>
+        <div class="text-2xl font-extrabold text-white font-mono tracking-tight" id="kpi-repeat">3.12%</div>
+        <div class="text-[11px] text-purple-300 font-medium mt-1">
+          2,997 multi-order buyers
+        </div>
+      </div>
+
+      <!-- Card 4: Median Delivery Days -->
+      <div class="glass-card rounded-2xl p-4 relative overflow-hidden group hover:border-amber-500/40 transition-all duration-300">
+        <div class="flex items-center justify-between text-slate-400 mb-2">
+          <span class="text-xs font-medium uppercase tracking-wider">Median Delivery</span>
+          <div class="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 group-hover:scale-110 transition-transform">
+            <i data-lucide="truck" class="w-4 h-4"></i>
+          </div>
+        </div>
+        <div class="text-2xl font-extrabold text-white font-mono tracking-tight" id="kpi-delivery">10.2 Days</div>
+        <div class="text-[11px] text-slate-400 font-medium mt-1">
+          P90 delivery: 28.3 days
+        </div>
+      </div>
+
+      <!-- Card 5: Review Satisfaction -->
+      <div class="glass-card rounded-2xl p-4 relative overflow-hidden group hover:border-emerald-500/40 transition-all duration-300">
+        <div class="flex items-center justify-between text-slate-400 mb-2">
+          <span class="text-xs font-medium uppercase tracking-wider">Review Score</span>
+          <div class="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:scale-110 transition-transform">
+            <i data-lucide="star" class="w-4 h-4"></i>
+          </div>
+        </div>
+        <div class="text-2xl font-extrabold text-white font-mono tracking-tight" id="kpi-review">4.07 ★</div>
+        <div class="text-[11px] text-emerald-400 font-medium mt-1">
+          Across 99,224 customer reviews
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 1: STUDIO (INTERACTIVE SQL PLAYGROUND) -->
+    <section id="view-studio" class="space-y-6">
+
+      <!-- Natural Language Assistant Bar -->
+      <div class="glass-card rounded-2xl p-5 border border-white/10 shadow-2xl relative overflow-hidden">
+        <div class="absolute -right-16 -top-16 w-48 h-48 bg-brand-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center space-x-2">
+            <div class="w-6 h-6 rounded-lg bg-gradient-to-tr from-brand-600 to-cyan-400 flex items-center justify-center shadow-sm">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5 text-white"></i>
+            </div>
+            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200">Executive Query Assistant</h2>
+            <span class="text-[11px] text-slate-400 font-normal">Ask any business question in plain English or write SQL directly</span>
+          </div>
+        </div>
+
+        <!-- Input & Ask Button -->
+        <div class="flex flex-col sm:flex-row gap-2.5">
+          <div class="relative flex-1">
+            <input 
+              type="text" 
+              id="nl-input" 
+              placeholder="e.g., Which product categories make the most money? What is our repeat customer rate? Who are the VIP customers?"
+              class="w-full glass-input rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none transition-all pl-10"
+              onkeydown="if(event.key === 'Enter') askAssistant()"
+            />
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5"></i>
+          </div>
+          <button 
+            onclick="askAssistant()" 
+            class="px-5 py-3 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-semibold text-xs tracking-wide shadow-glow-indigo transition-all duration-200 flex items-center justify-center space-x-2 shrink-0">
+            <i data-lucide="zap" class="w-4 h-4"></i>
+            <span>Ask & Translate</span>
+          </button>
+        </div>
+
+        <!-- Preset Chips -->
+        <div class="flex flex-wrap items-center gap-2 mt-3.5 pt-3 border-t border-white/5">
+          <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mr-1">Quick Insights:</span>
+          <button onclick="loadCustomQuery('delay_cliff')" class="px-2.5 py-1 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 hover:text-white border border-indigo-500/40 text-xs font-semibold transition flex items-center space-x-1"><i data-lucide="sparkles" class="w-3 h-3 text-cyan-400"></i><span>Delay vs Review Score (New)</span></button>
+          <button onclick="loadCustomQuery('installments')" class="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 hover:text-white border border-emerald-500/40 text-xs font-semibold transition flex items-center space-x-1"><i data-lucide="sparkles" class="w-3 h-3 text-emerald-400"></i><span>Installments Multiplier (New)</span></button>
+          <button onclick="loadPreset('Q02')" class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-brand-500/20 text-slate-300 hover:text-white border border-white/10 text-xs transition">Top Categories (Q02)</button>
+          <button onclick="loadPreset('Q19')" class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-brand-500/20 text-slate-300 hover:text-white border border-white/10 text-xs transition">Monthly Revenue & MoM (Q19)</button>
+          <button onclick="loadPreset('Q28')" class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-brand-500/20 text-slate-300 hover:text-white border border-white/10 text-xs transition">Repeat Buyer Rate (Q28)</button>
+          <button onclick="loadPreset('Q38')" class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-brand-500/20 text-slate-300 hover:text-white border border-white/10 text-xs transition">Delivery Time Spread (Q38)</button>
+          <button onclick="loadPreset('Q29')" class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-brand-500/20 text-slate-300 hover:text-white border border-white/10 text-xs transition">VIP Customers (Q29)</button>
+          <button onclick="loadPreset('Q04')" class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-brand-500/20 text-slate-300 hover:text-white border border-white/10 text-xs transition">Payment Tender Mix (Q04)</button>
+          <button onclick="loadPreset('Q33')" class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-brand-500/20 text-slate-300 hover:text-white border border-white/10 text-xs transition">Top Sellers GMV (Q33)</button>
+        </div>
+      </div>
+
+      <!-- SQL Studio Editor & Execution Section -->
+      <div class="grid grid-cols-1 gap-6">
+        <div class="glass-card rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
+          <!-- Editor Header -->
+          <div class="px-5 py-3.5 border-b border-white/10 bg-dark-900/60 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center space-x-2">
+              <i data-lucide="code-2" class="w-4 h-4 text-brand-400"></i>
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-200">SQL Studio Console</span>
+              <span id="active-query-label" class="text-[11px] px-2 py-0.5 rounded bg-brand-500/10 text-brand-400 font-mono hidden">Custom Query</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="text-[11px] text-slate-400 hidden sm:inline font-mono">Press <kbd class="px-1.5 py-0.5 rounded bg-dark-800 border border-white/10 text-slate-300">Ctrl + Enter</kbd> to run</span>
+              <button onclick="copySQL()" class="p-1.5 rounded-lg bg-dark-800 hover:bg-dark-700 text-slate-400 hover:text-white text-xs border border-white/10 transition" title="Copy SQL">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+              </button>
+              <button onclick="clearSQL()" class="p-1.5 rounded-lg bg-dark-800 hover:bg-dark-700 text-slate-400 hover:text-white text-xs border border-white/10 transition" title="Clear Editor">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
+              <button onclick="runQuery()" id="run-btn" class="px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs shadow-glow-emerald transition-all flex items-center space-x-1.5">
+                <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
+                <span>Execute Query</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- SQL Textarea -->
+          <div class="relative bg-dark-950/80 p-4">
+            <textarea 
+              id="sql-editor" 
+              rows="6"
+              class="w-full bg-transparent font-mono text-xs sm:text-sm text-indigo-100 placeholder-slate-600 focus:outline-none resize-y leading-relaxed"
+              placeholder="Write any SELECT query here, e.g. SELECT * FROM analytics.fact_orders LIMIT 10;"
+              spellcheck="false"
+              onkeydown="if((event.ctrlKey || event.metaKey) && event.key === 'Enter') runQuery()"
+            >SELECT coalesce(p.product_category_name_english, p.product_category_name, 'unknown') AS category, sum(i.price) AS item_revenue 
+FROM analytics.fact_order_items i 
+JOIN analytics.dim_product p ON p.product_key = i.product_key 
+GROUP BY 1 
+ORDER BY item_revenue DESC 
+LIMIT 10;</textarea>
+          </div>
+
+          <!-- Execution Stats HUD -->
+          <div id="execution-hud" class="px-5 py-2.5 border-t border-white/10 bg-dark-900/90 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div class="flex items-center space-x-3">
+              <span id="hud-status" class="flex items-center text-slate-400">
+                <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 mr-1.5"></i>
+                Ready
+              </span>
+              <span class="text-slate-600">|</span>
+              <span id="hud-time" class="font-mono text-slate-300">0.0 ms</span>
+              <span class="text-slate-600">|</span>
+              <span id="hud-rows" class="font-mono text-slate-300">0 rows</span>
+            </div>
+
+            <!-- View Switcher & Actions -->
+            <div class="flex items-center space-x-2">
+              <div class="flex bg-dark-800 p-0.5 rounded-lg border border-white/10">
+                <button onclick="setViewMode('table')" id="view-mode-table" class="px-2.5 py-1 rounded text-[11px] font-semibold bg-brand-600 text-white flex items-center space-x-1 transition">
+                  <i data-lucide="table" class="w-3 h-3"></i>
+                  <span>Table</span>
+                </button>
+                <button onclick="setViewMode('chart')" id="view-mode-chart" class="px-2.5 py-1 rounded text-[11px] font-semibold text-slate-400 hover:text-white flex items-center space-x-1 transition">
+                  <i data-lucide="bar-chart-2" class="w-3 h-3"></i>
+                  <span>Chart</span>
+                </button>
+              </div>
+              <button onclick="exportCSV()" id="export-btn" class="px-2.5 py-1 rounded-lg bg-dark-800 hover:bg-dark-700 text-slate-300 hover:text-white border border-white/10 text-[11px] font-semibold flex items-center space-x-1 transition" title="Export Results to CSV">
+                <i data-lucide="download" class="w-3 h-3"></i>
+                <span>Export CSV</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- RESULTS DISPLAY SECTION -->
+        <div class="glass-card rounded-2xl border border-white/10 overflow-hidden shadow-2xl p-5 space-y-4">
+          
+          <!-- Chart Container (hidden by default unless chart mode selected) -->
+          <div id="chart-container" class="hidden space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center">
+                <i data-lucide="line-chart" class="w-4 h-4 mr-1.5 text-cyan-400"></i>
+                Data Visualization
+              </h3>
+              <div class="flex items-center space-x-1 bg-dark-850 p-1 rounded-lg border border-white/10">
+                <button onclick="changeChartType('bar')" class="px-2 py-0.5 rounded text-[10px] font-medium bg-white/10 text-white">Bar</button>
+                <button onclick="changeChartType('line')" class="px-2 py-0.5 rounded text-[10px] font-medium text-slate-400 hover:text-white">Line</button>
+                <button onclick="changeChartType('doughnut')" class="px-2 py-0.5 rounded text-[10px] font-medium text-slate-400 hover:text-white">Doughnut</button>
+              </div>
+            </div>
+            <div class="w-full h-80 bg-dark-950/60 rounded-xl p-4 border border-white/5 relative">
+              <canvas id="resultChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Table Container -->
+          <div id="table-container" class="space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center space-x-2">
+                <input 
+                  type="text" 
+                  id="table-filter" 
+                  placeholder="Filter table rows..." 
+                  class="glass-input rounded-lg px-3 py-1 text-xs text-slate-200 placeholder-slate-500 focus:outline-none w-48"
+                  onkeyup="filterTableRows()"
+                />
+                <span id="filtered-count" class="text-[11px] text-slate-500"></span>
+              </div>
+              <!-- Pagination -->
+              <div id="pagination-controls" class="flex items-center space-x-2 text-xs text-slate-400">
+                <button onclick="prevPage()" id="prev-page-btn" class="px-2 py-1 rounded bg-dark-800 hover:bg-dark-700 disabled:opacity-30 disabled:cursor-not-allowed">Previous</button>
+                <span id="page-indicator" class="font-mono text-[11px] text-slate-300">Page 1 of 1</span>
+                <button onclick="nextPage()" id="next-page-btn" class="px-2 py-1 rounded bg-dark-800 hover:bg-dark-700 disabled:opacity-30 disabled:cursor-not-allowed">Next</button>
+              </div>
+            </div>
+
+            <!-- Scrollable Table -->
+            <div class="overflow-x-auto rounded-xl border border-white/10 bg-dark-950/60 max-h-[500px]">
+              <table class="w-full text-left text-xs font-mono border-collapse" id="results-table">
+                <thead class="sticky top-0 bg-dark-900 border-b border-white/10 text-slate-400 uppercase tracking-wider text-[10px]" id="results-thead">
+                  <tr>
+                    <th class="p-3">#</th>
+                    <th class="p-3">category</th>
+                    <th class="p-3">item_revenue</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5 text-slate-200" id="results-tbody">
+                  <tr>
+                    <td colspan="3" class="p-6 text-center text-slate-500 font-sans">Click "Execute Query" or choose an insight above to load data.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: CURRICULUM (Q01 – Q42) -->
+    <section id="view-curriculum" class="hidden space-y-6">
+      <div class="glass-card rounded-2xl p-5 border border-white/10">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center">
+              <i data-lucide="book-open" class="w-5 h-5 mr-2 text-brand-400"></i>
+              Advanced Analytics Curriculum (Q01 – Q42)
+            </h2>
+            <p class="text-xs text-slate-400 mt-1">Explore 42 industry-grade analytical SQL patterns grouped across 8 analytical disciplines.</p>
+          </div>
+          <!-- Search Curriculum -->
+          <div class="relative w-full md:w-72">
+            <input 
+              type="text" 
+              id="curriculum-search" 
+              placeholder="Search query, grain, technique..."
+              class="w-full glass-input rounded-xl px-3.5 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none pl-9"
+              onkeyup="renderCurriculum()"
+            />
+            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5"></i>
+          </div>
+        </div>
+
+        <!-- Category Filters -->
+        <div class="flex flex-wrap gap-1.5 mt-4 pt-4 border-t border-white/5" id="category-filter-chips">
+          <button onclick="setCurriculumCategory('All')" class="curr-cat-btn px-3 py-1 rounded-lg text-xs font-semibold bg-brand-600 text-white">All (42)</button>
+          <!-- Dynamically populated categories -->
+        </div>
+      </div>
+
+      <!-- Curriculum Grid -->
+      <div id="curriculum-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Cards populated via JavaScript -->
+      </div>
+    </section>
+
+    <!-- TAB 3: PERFORMANCE ARENA -->
+    <section id="view-benchmarks" class="hidden space-y-6">
+      <div class="glass-card rounded-2xl p-6 border border-white/10">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-extrabold uppercase tracking-wider border border-amber-500/30">Benchmark Arena</span>
+              <h2 class="text-lg font-bold text-white">Query Optimization & Materialized View Experiments</h2>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">Measured JSON <code class="text-amber-300 font-mono">EXPLAIN (ANALYZE, BUFFERS)</code> performance comparisons over 112,650 order items.</p>
+          </div>
+          <button onclick="loadBenchmarks()" class="px-3.5 py-2 rounded-xl bg-dark-800 hover:bg-dark-700 text-slate-300 hover:text-white border border-white/10 text-xs font-semibold flex items-center space-x-1.5 transition">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+            <span>Refresh Evidence</span>
+          </button>
+        </div>
+
+        <!-- Highlight Speedup Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+          <div class="bg-dark-900/80 rounded-xl p-4 border border-white/10">
+            <div class="flex justify-between items-center text-xs text-slate-400">
+              <span class="font-mono text-brand-400 font-bold">Q35 Category Revenue</span>
+              <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-bold">~148x Faster</span>
+            </div>
+            <div class="mt-3 space-y-2">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-400">Baseline (Full Scan):</span>
+                <span class="font-mono text-rose-400 font-bold">68.39 ms</span>
+              </div>
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-400">Materialized View:</span>
+                <span class="font-mono text-emerald-400 font-bold">0.46 ms</span>
+              </div>
+              <div class="w-full bg-dark-800 rounded-full h-2 overflow-hidden mt-2">
+                <div class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full" style="width: 99.4%"></div>
+              </div>
+              <p class="text-[10px] text-slate-500 mt-1 font-mono">Buffer hits: 2,681 -> 16 blocks (-99.4%)</p>
+            </div>
+          </div>
+
+          <div class="bg-dark-900/80 rounded-xl p-4 border border-white/10">
+            <div class="flex justify-between items-center text-xs text-slate-400">
+              <span class="font-mono text-brand-400 font-bold">Q24 Rolling Revenue</span>
+              <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-bold">~65.6x Faster</span>
+            </div>
+            <div class="mt-3 space-y-2">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-400">Baseline (Table Scan):</span>
+                <span class="font-mono text-rose-400 font-bold">25.34 ms</span>
+              </div>
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-400">Materialized View:</span>
+                <span class="font-mono text-emerald-400 font-bold">0.39 ms</span>
+              </div>
+              <div class="w-full bg-dark-800 rounded-full h-2 overflow-hidden mt-2">
+                <div class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full" style="width: 98.4%"></div>
+              </div>
+              <p class="text-[10px] text-slate-500 mt-1 font-mono">Buffer hits: 1,913 -> 16 blocks (-99.2%)</p>
+            </div>
+          </div>
+
+          <div class="bg-dark-900/80 rounded-xl p-4 border border-white/10">
+            <div class="flex justify-between items-center text-xs text-slate-400">
+              <span class="font-mono text-brand-400 font-bold">Q42 Seller Coverage</span>
+              <span class="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 text-[10px] font-bold">~16.3% Faster</span>
+            </div>
+            <div class="mt-3 space-y-2">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-400">Baseline:</span>
+                <span class="font-mono text-rose-400 font-bold">178.36 ms</span>
+              </div>
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-400">Targeted Index:</span>
+                <span class="font-mono text-cyan-400 font-bold">149.27 ms</span>
+              </div>
+              <div class="w-full bg-dark-800 rounded-full h-2 overflow-hidden mt-2">
+                <div class="bg-gradient-to-r from-cyan-500 to-blue-400 h-full rounded-full" style="width: 83.7%"></div>
+              </div>
+              <p class="text-[10px] text-slate-500 mt-1 font-mono">Index lookups on order_items & product</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Full Benchmark Table -->
+        <div class="mt-6">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3">Measured Observations (evaluation/query_benchmarks.csv)</h3>
+          <div class="overflow-x-auto rounded-xl border border-white/10 bg-dark-950/60 max-h-96">
+            <table class="w-full text-left text-xs font-mono" id="benchmarks-table">
+              <thead class="sticky top-0 bg-dark-900 border-b border-white/10 text-slate-400 uppercase text-[10px]">
+                <tr>
+                  <th class="p-3">Query</th>
+                  <th class="p-3">Variant</th>
+                  <th class="p-3">Exec Time (ms)</th>
+                  <th class="p-3">Plan Time (ms)</th>
+                  <th class="p-3">Shared Hits</th>
+                  <th class="p-3">Rows</th>
+                  <th class="p-3">Index Used</th>
+                  <th class="p-3">Notes</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-white/5 text-slate-300" id="benchmarks-tbody">
+                <tr><td colspan="8" class="p-6 text-center text-slate-500">Loading benchmark evidence...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: DATA CATALOG -->
+    <section id="view-catalog" class="hidden space-y-6">
+      <div class="glass-card rounded-2xl p-6 border border-white/10">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center">
+              <i data-lucide="database" class="w-5 h-5 mr-2 text-cyan-400"></i>
+              Relational Schema & Data Catalog
+            </h2>
+            <p class="text-xs text-slate-400 mt-1">Explore all tables, views, columns, and data counts across <span class="text-brand-300 font-mono">analytics</span>, <span class="text-cyan-300 font-mono">core</span>, and <span class="text-amber-300 font-mono">raw</span>.</p>
+          </div>
+        </div>
+
+        <!-- Schema Accordions / Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+          <!-- Analytics Schema -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-brand-500/30">
+              <span class="font-bold text-sm text-brand-300 font-mono">analytics schema</span>
+              <span class="text-[11px] px-2 py-0.5 rounded bg-brand-500/20 text-brand-300 font-bold">Star Schema / Facts</span>
+            </div>
+            <div id="catalog-analytics-list" class="space-y-2">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Core Schema -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-cyan-500/30">
+              <span class="font-bold text-sm text-cyan-300 font-mono">core schema</span>
+              <span class="text-[11px] px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-bold">Typed & Relational</span>
+            </div>
+            <div id="catalog-core-list" class="space-y-2">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Raw Schema -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-amber-500/30">
+              <span class="font-bold text-sm text-amber-300 font-mono">raw schema</span>
+              <span class="text-[11px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">Source Fidelity</span>
+            </div>
+            <div id="catalog-raw-list" class="space-y-2">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-white/10 bg-dark-950/80 mt-auto py-4 text-center text-xs text-slate-500 font-mono">
+    Quarklytics Analytics Engine • PostgreSQL 16.15 • Olist Brazilian E-Commerce Public Dataset
+  </footer>
+
+  <!-- SCRIPT LOGIC -->
+  <script>
+    // State management
+    let currentResultData = null;
+    let allCurriculum = [];
+    let selectedCategory = 'All';
+    let chartInstance = null;
+    let activeChartType = 'bar';
+    let currentPage = 1;
+    const pageSize = 20;
+    let currentTableRows = [];
+    let filteredTableRows = [];
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', async () => {
+      lucide.createIcons();
+      await fetchKPIs();
+      await fetchCurriculum();
+      await fetchCatalog();
+      // Run default query
+      runQuery();
+    });
+
+    // Tab Switching
+    function switchTab(tabId) {
+      const tabs = ['studio', 'curriculum', 'benchmarks', 'catalog'];
+      tabs.forEach(t => {
+        document.getElementById(`view-${t}`).classList.add('hidden');
+        const btn = document.getElementById(`tab-btn-${t}`);
+        btn.classList.remove('bg-brand-600', 'text-white', 'shadow-sm');
+        btn.classList.add('text-slate-400');
+      });
+      document.getElementById(`view-${tabId}`).classList.remove('hidden');
+      const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+      activeBtn.classList.remove('text-slate-400');
+      activeBtn.classList.add('bg-brand-600', 'text-white', 'shadow-sm');
+
+      if (tabId === 'benchmarks') {
+        loadBenchmarks();
+      }
+      lucide.createIcons();
+    }
+
+    // Fetch Executive KPIs
+    async function fetchKPIs() {
+      try {
+        const res = await fetch('/api/kpis');
+        const data = await res.json();
+        if (data.status === 'healthy') {
+          document.getElementById('kpi-orders').textContent = Number(data.total_orders).toLocaleString();
+          document.getElementById('kpi-gmv').textContent = `R$ ${(data.total_order_value / 1000000).toFixed(2)}M`;
+          document.getElementById('kpi-repeat').textContent = `${data.repeat_rate_pct}%`;
+          document.getElementById('kpi-delivery').textContent = `${data.median_delivery_days} Days`;
+          document.getElementById('kpi-review').textContent = `${data.avg_review_score} ★`;
+        }
+      } catch (e) {
+        console.error("Failed to load KPIs", e);
+      }
+    }
+
+    // Run Current SQL Query
+    async function runQuery() {
+      const sql = document.getElementById('sql-editor').value.trim();
+      if (!sql) return;
+
+      const runBtn = document.getElementById('run-btn');
+      const hudStatus = document.getElementById('hud-status');
+      const hudTime = document.getElementById('hud-time');
+      const hudRows = document.getElementById('hud-rows');
+
+      runBtn.disabled = true;
+      runBtn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Running...</span>`;
+      hudStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400 animate-ping mr-1.5"></span>Running...`;
+      lucide.createIcons();
+
+      try {
+        const res = await fetch('/api/query', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sql: sql, limit: 500 })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          currentResultData = data;
+          currentTableRows = data.rows;
+          filteredTableRows = [...currentTableRows];
+          currentPage = 1;
+
+          hudStatus.innerHTML = `<i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 mr-1.5"></i>Success`;
+          hudTime.textContent = `${data.execution_ms} ms`;
+          hudRows.textContent = `${data.total_rows} rows`;
+
+          renderTable(data.columns, filteredTableRows);
+          renderChart(data.columns, filteredTableRows);
+        } else {
+          hudStatus.innerHTML = `<i data-lucide="alert-circle" class="w-4 h-4 text-rose-400 mr-1.5"></i>Error`;
+          hudTime.textContent = `${data.execution_ms} ms`;
+          hudRows.textContent = `0 rows`;
+          renderError(data.error);
+        }
+      } catch (e) {
+        hudStatus.innerHTML = `<i data-lucide="alert-circle" class="w-4 h-4 text-rose-400 mr-1.5"></i>Network Error`;
+        renderError(e.message);
+      } finally {
+        runBtn.disabled = false;
+        runBtn.innerHTML = `<i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i><span>Execute Query</span>`;
+        lucide.createIcons();
+      }
+    }
+
+    // Ask Natural Language Assistant
+    async function askAssistant() {
+      const q = document.getElementById('nl-input').value.trim();
+      if (!q) return;
+
+      try {
+        const res = await fetch('/api/ask', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: q })
+        });
+        const data = await res.json();
+        if (data.sql) {
+          document.getElementById('sql-editor').value = data.sql;
+          const qLabel = document.getElementById('active-query-label');
+          qLabel.textContent = data.title || "Generated Query";
+          qLabel.classList.remove('hidden');
+          runQuery();
+        }
+      } catch (e) {
+        console.error("Assistant translation failed", e);
+      }
+    }
+
+    // Load Preset Query
+    function loadPreset(qid) {
+      const match = allCurriculum.find(c => c.id === qid);
+      if (match) {
+        document.getElementById('sql-editor').value = match.sql;
+        const qLabel = document.getElementById('active-query-label');
+        qLabel.textContent = `${match.id}: ${match.question}`;
+        qLabel.classList.remove('hidden');
+        runQuery();
+      }
+    }
+
+    function loadCustomQuery(type) {
+      if (type === 'delay_cliff') {
+        document.getElementById('sql-editor').value = `SELECT 
+    CASE 
+        WHEN NOT is_delivered THEN '5. Undelivered / In-Transit'
+        WHEN NOT is_late THEN '1. On Time / Early'
+        WHEN delivery_days - estimated_delivery_days <= 3 THEN '2. 1 to 3 Days Late'
+        WHEN delivery_days - estimated_delivery_days <= 7 THEN '3. 4 to 7 Days Late'
+        ELSE '4. 8+ Days Late'
+    END AS delivery_status,
+    count(*) AS total_orders,
+    round(avg(review_score), 2) AS avg_review_score,
+    round(100.0 * count(*) FILTER (WHERE review_score = 1) / count(*), 1) AS pct_1_star,
+    round(100.0 * count(*) FILTER (WHERE review_score = 5) / count(*), 1) AS pct_5_star
+FROM analytics.fact_orders
+WHERE review_score IS NOT NULL
+GROUP BY 1
+ORDER BY 1;`;
+        const qLabel = document.getElementById('active-query-label');
+        qLabel.textContent = "New: Delivery Delay Cliff & Review Score Collapse";
+        qLabel.classList.remove('hidden');
+        runQuery();
+      } else if (type === 'installments') {
+        document.getElementById('sql-editor').value = `SELECT 
+    CASE 
+        WHEN payment_installments = 1 THEN '1. Upfront (1 Installment)'
+        WHEN payment_installments BETWEEN 2 AND 3 THEN '2. Short (2-3 Installments)'
+        WHEN payment_installments BETWEEN 4 AND 6 THEN '3. Medium (4-6 Installments)'
+        WHEN payment_installments BETWEEN 7 AND 10 THEN '4. Long (7-10 Installments)'
+        ELSE '5. Extended (11+ Installments)'
+    END AS installment_tier,
+    count(DISTINCT p.order_id) AS order_count,
+    round(avg(p.payment_value), 2) AS avg_order_spend,
+    round(sum(p.payment_value) / 1000000.0, 2) AS total_volume_m,
+    round(avg(p.payment_installments), 1) AS avg_installments
+FROM core.order_payments p
+WHERE p.payment_type = 'credit_card'
+GROUP BY 1
+ORDER BY installment_tier;`;
+        const qLabel = document.getElementById('active-query-label');
+        qLabel.textContent = "New: Credit Card Installments vs Customer Spend";
+        qLabel.classList.remove('hidden');
+        runQuery();
+      }
+    }
+
+    // Render Data Table with Pagination
+    function renderTable(columns, rows) {
+      const thead = document.getElementById('results-thead');
+      const tbody = document.getElementById('results-tbody');
+
+      thead.innerHTML = `<tr><th class="p-3 w-12 text-slate-500">#</th>${columns.map(c => `<th class="p-3">${c}</th>`).join('')}</tr>`;
+
+      if (!rows || rows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${columns.length + 1}" class="p-8 text-center text-slate-500 font-sans">Query returned 0 rows.</td></tr>`;
+        updatePagination(0);
+        return;
+      }
+
+      updatePagination(rows.length);
+      const start = (currentPage - 1) * pageSize;
+      const end = start + pageSize;
+      const pageRows = rows.slice(start, end);
+
+      tbody.innerHTML = pageRows.map((r, idx) => `
+        <tr class="hover:bg-brand-500/5 transition">
+          <td class="p-3 text-slate-500 text-[11px]">${start + idx + 1}</td>
+          ${r.map(val => `<td class="p-3">${val === null ? '<span class="text-slate-600">NULL</span>' : escapeHtml(val)}</td>`).join('')}
+        </tr>
+      `).join('');
+    }
+
+    function renderError(msg) {
+      const tbody = document.getElementById('results-tbody');
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="10" class="p-6 bg-rose-500/10 border border-rose-500/20 text-rose-300 font-sans rounded-xl">
+            <div class="flex items-start space-x-2">
+              <i data-lucide="alert-triangle" class="w-5 h-5 text-rose-400 shrink-0 mt-0.5"></i>
+              <div>
+                <strong class="font-bold text-sm block">Query Execution Error</strong>
+                <p class="font-mono text-xs mt-1 whitespace-pre-wrap">${escapeHtml(msg)}</p>
+              </div>
+            </div>
+          </td>
+        </tr>
+      `;
+      lucide.createIcons();
+    }
+
+    // Pagination controls
+    function updatePagination(total) {
+      const totalPages = Math.ceil(total / pageSize) || 1;
+      document.getElementById('page-indicator').textContent = `Page ${currentPage} of ${totalPages} (${total} total)`;
+      document.getElementById('prev-page-btn').disabled = currentPage <= 1;
+      document.getElementById('next-page-btn').disabled = currentPage >= totalPages;
+    }
+
+    function prevPage() {
+      if (currentPage > 1) {
+        currentPage--;
+        renderTable(currentResultData.columns, filteredTableRows);
+      }
+    }
+
+    function nextPage() {
+      const totalPages = Math.ceil(filteredTableRows.length / pageSize);
+      if (currentPage < totalPages) {
+        currentPage++;
+        renderTable(currentResultData.columns, filteredTableRows);
+      }
+    }
+
+    // Filter Table Rows
+    function filterTableRows() {
+      const filter = document.getElementById('table-filter').value.toLowerCase();
+      if (!currentResultData) return;
+
+      filteredTableRows = currentTableRows.filter(row => 
+        row.some(val => val !== null && String(val).toLowerCase().includes(filter))
+      );
+      currentPage = 1;
+      renderTable(currentResultData.columns, filteredTableRows);
+      document.getElementById('filtered-count').textContent = filter ? `Found ${filteredTableRows.length} matches` : '';
+    }
+
+    // View Mode Toggle (Table vs Chart)
+    function setViewMode(mode) {
+      const tableBtn = document.getElementById('view-mode-table');
+      const chartBtn = document.getElementById('view-mode-chart');
+      const tableContainer = document.getElementById('table-container');
+      const chartContainer = document.getElementById('chart-container');
+
+      if (mode === 'table') {
+        tableBtn.classList.add('bg-brand-600', 'text-white');
+        tableBtn.classList.remove('text-slate-400');
+        chartBtn.classList.remove('bg-brand-600', 'text-white');
+        chartBtn.classList.add('text-slate-400');
+        tableContainer.classList.remove('hidden');
+        chartContainer.classList.add('hidden');
+      } else {
+        chartBtn.classList.add('bg-brand-600', 'text-white');
+        chartBtn.classList.remove('text-slate-400');
+        tableBtn.classList.remove('bg-brand-600', 'text-white');
+        tableBtn.classList.add('text-slate-400');
+        chartContainer.classList.remove('hidden');
+        tableContainer.classList.add('hidden');
+        if (currentResultData) {
+          renderChart(currentResultData.columns, filteredTableRows);
+        }
+      }
+    }
+
+    // Chart.js Rendering
+    function renderChart(columns, rows) {
+      if (!rows || rows.length === 0 || columns.length < 2) return;
+      const ctx = document.getElementById('resultChart').getContext('2d');
+
+      const labels = rows.slice(0, 15).map(r => String(r[0] || 'N/A'));
+      // Look for first numeric column
+      let numColIdx = -1;
+      for (let i = 1; i < columns.length; i++) {
+        if (rows.some(r => !isNaN(parseFloat(r[i])))) {
+          numColIdx = i;
+          break;
+        }
+      }
+      if (numColIdx === -1) numColIdx = 1;
+
+      const dataValues = rows.slice(0, 15).map(r => parseFloat(r[numColIdx]) || 0);
+
+      if (chartInstance) chartInstance.destroy();
+
+      const bgColors = [
+        'rgba(99, 102, 241, 0.7)',
+        'rgba(6, 182, 212, 0.7)',
+        'rgba(16, 185, 129, 0.7)',
+        'rgba(245, 158, 11, 0.7)',
+        'rgba(236, 72, 153, 0.7)',
+        'rgba(139, 92, 246, 0.7)',
+        'rgba(59, 130, 246, 0.7)',
+      ];
+
+      chartInstance = new Chart(ctx, {
+        type: activeChartType,
+        data: {
+          labels: labels,
+          datasets: [{
+            label: columns[numColIdx],
+            data: dataValues,
+            backgroundColor: activeChartType === 'doughnut' ? bgColors : 'rgba(99, 102, 241, 0.65)',
+            borderColor: activeChartType === 'doughnut' ? '#0b0f19' : 'rgba(129, 140, 248, 1)',
+            borderWidth: 1.5,
+            tension: 0.3,
+            fill: activeChartType === 'line',
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: '#94a3b8', font: { family: 'Plus Jakarta Sans', size: 11 } } }
+          },
+          scales: activeChartType === 'doughnut' ? {} : {
+            x: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+            y: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
+          }
+        }
+      });
+    }
+
+    function changeChartType(type) {
+      activeChartType = type;
+      if (currentResultData) {
+        renderChart(currentResultData.columns, filteredTableRows);
+      }
+    }
+
+    // Export CSV
+    function exportCSV() {
+      if (!currentResultData || !currentResultData.rows) return;
+      const cols = currentResultData.columns;
+      const rows = currentResultData.rows;
+      let csvContent = "data:text/csv;charset=utf-8," + [cols.join(','), ...rows.map(r => r.map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(','))].join('\n');
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `quarklytics_export_${Date.now()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // Copy SQL
+    function copySQL() {
+      const sql = document.getElementById('sql-editor').value;
+      navigator.clipboard.writeText(sql);
+      alert('SQL query copied to clipboard!');
+    }
+
+    // Clear SQL
+    function clearSQL() {
+      document.getElementById('sql-editor').value = '';
+    }
+
+    // Fetch Curriculum
+    async function fetchCurriculum() {
+      try {
+        const res = await fetch('/api/curriculum');
+        allCurriculum = await res.json();
+
+        // Populate Category Filter Chips
+        const categories = ['All', ...new Set(allCurriculum.map(c => c.category))];
+        const chipsContainer = document.getElementById('category-filter-chips');
+        chipsContainer.innerHTML = categories.map(cat => `
+          <button onclick="setCurriculumCategory('${cat}')" id="cat-chip-${cat.replace(/\s+/g, '-')}" class="curr-cat-btn px-2.5 py-1 rounded-lg text-xs font-semibold ${cat === 'All' ? 'bg-brand-600 text-white' : 'bg-white/5 hover:bg-white/10 text-slate-300'} transition">
+            ${cat}
+          </button>
+        `).join('');
+
+        renderCurriculum();
+      } catch (e) {
+        console.error("Failed to load curriculum", e);
+      }
+    }
+
+    function setCurriculumCategory(cat) {
+      selectedCategory = cat;
+      document.querySelectorAll('.curr-cat-btn').forEach(b => {
+        b.classList.remove('bg-brand-600', 'text-white');
+        b.classList.add('bg-white/5', 'text-slate-300');
+      });
+      const active = document.getElementById(`cat-chip-${cat.replace(/\s+/g, '-')}`);
+      if (active) {
+        active.classList.add('bg-brand-600', 'text-white');
+        active.classList.remove('bg-white/5', 'text-slate-300');
+      }
+      renderCurriculum();
+    }
+
+    function renderCurriculum() {
+      const search = (document.getElementById('curriculum-search')?.value || '').toLowerCase();
+      const grid = document.getElementById('curriculum-grid');
+
+      let list = allCurriculum;
+      if (selectedCategory !== 'All') {
+        list = list.filter(c => c.category === selectedCategory);
+      }
+      if (search) {
+        list = list.filter(c => 
+          c.id.toLowerCase().includes(search) || 
+          c.question.toLowerCase().includes(search) || 
+          c.purpose.toLowerCase().includes(search) || 
+          c.techniques.some(t => t.toLowerCase().includes(search))
+        );
+      }
+
+      grid.innerHTML = list.map(q => `
+        <div class="glass-card rounded-xl p-4.5 border border-white/10 flex flex-col justify-between hover:border-brand-500/40 transition-all duration-200">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-mono font-extrabold px-2 py-0.5 rounded bg-brand-500/20 text-brand-300 border border-brand-500/30">${q.id}</span>
+              <span class="text-[10px] text-slate-400 font-mono">${q.grain}</span>
+            </div>
+            <h3 class="font-bold text-sm text-white mb-1 leading-snug">${q.question}</h3>
+            <p class="text-xs text-slate-400 mb-3">${q.purpose}</p>
+            <div class="flex flex-wrap gap-1 mb-3">
+              ${q.techniques.map(t => `<span class="px-1.5 py-0.5 rounded bg-dark-800 text-slate-300 text-[10px] font-mono border border-white/5">${t}</span>`).join('')}
+            </div>
+          </div>
+          <button onclick="loadAndRunCurriculum('${q.id}')" class="w-full py-1.5 rounded-lg bg-dark-800 hover:bg-brand-600 text-slate-200 hover:text-white border border-white/10 text-xs font-semibold flex items-center justify-center space-x-1.5 transition">
+            <i data-lucide="play" class="w-3 h-3 fill-current"></i>
+            <span>Run in Studio</span>
+          </button>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function loadAndRunCurriculum(qid) {
+      loadPreset(qid);
+      switchTab('studio');
+    }
+
+    // Benchmarks Tab
+    async function loadBenchmarks() {
+      try {
+        const res = await fetch('/api/benchmarks');
+        const rows = await res.json();
+        const tbody = document.getElementById('benchmarks-tbody');
+        if (!rows || rows.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-slate-500">No benchmark observations recorded.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = rows.map(r => `
+          <tr class="hover:bg-white/5 transition">
+            <td class="p-3 font-bold text-brand-400">${r.query_id}</td>
+            <td class="p-3">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${r.variant === 'materialized' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : (r.variant === 'optimized' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'bg-slate-800 text-slate-300')}">
+                ${r.variant}
+              </span>
+            </td>
+            <td class="p-3 font-mono font-bold ${parseFloat(r.execution_ms) < 1 ? 'text-emerald-400' : 'text-slate-200'}">${parseFloat(r.execution_ms).toFixed(3)} ms</td>
+            <td class="p-3 font-mono text-slate-400">${parseFloat(r.planning_ms).toFixed(3)} ms</td>
+            <td class="p-3 font-mono text-slate-300">${r.shared_hit_blocks}</td>
+            <td class="p-3 font-mono text-slate-300">${r.rows}</td>
+            <td class="p-3 text-slate-400">${r.index_used}</td>
+            <td class="p-3 text-[11px] text-slate-400 truncate max-w-xs">${r.notes || '—'}</td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        console.error("Failed to load benchmarks", e);
+      }
+    }
+
+    // Catalog Tab
+    async function fetchCatalog() {
+      try {
+        const res = await fetch('/api/schema');
+        const tables = await res.json();
+
+        ['analytics', 'core', 'raw'].forEach(s => {
+          const container = document.getElementById(`catalog-${s}-list`);
+          const sTables = tables.filter(t => t.schema === s);
+          container.innerHTML = sTables.map(t => `
+            <div class="glass-card rounded-xl p-3 border border-white/5 hover:border-white/20 transition">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-bold text-xs text-white font-mono">${t.name}</span>
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-dark-800 text-slate-400">${Number(t.row_count).toLocaleString()} rows</span>
+              </div>
+              <div class="flex items-center justify-between text-[11px] text-slate-400">
+                <span>${t.type} • ${t.columns.length} columns</span>
+                <button onclick="previewTable('${t.schema}.${t.name}')" class="text-brand-400 hover:text-brand-300 font-semibold text-[10px]">Preview 10</button>
+              </div>
+            </div>
+          `).join('');
+        });
+      } catch (e) {
+        console.error("Failed to load catalog", e);
+      }
+    }
+
+    function previewTable(tableName) {
+      document.getElementById('sql-editor').value = `SELECT * FROM ${tableName} LIMIT 10;`;
+      switchTab('studio');
+      runQuery();
+    }
+
+    // Utilities
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
+</body>
+</html>

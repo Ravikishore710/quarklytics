@@ -1,0 +1,4 @@
+artifact,status,notes
+full_dataset,completed,"Loaded all 9 raw Olist CSVs (1,000,163 geolocation, 99,441 orders, 112,650 items, 103,886 payments, 99,224 reviews); zero FK orphans; 9/9 tests passed."
+benchmarks,completed,"Executed 5 runs across baseline, optimized (targeted indexes), and materialized variants. Materialized views delivered up to ~148x speedup on category revenue (Q35)."
+selected_results,completed,"Generated JSON execution plans with buffer statistics and bounded CSV result samples for Q01, Q02, Q04, Q05, Q08, Q12, Q15, Q19, Q24, Q28, Q32, Q33, Q35, Q38, Q41, Q42."

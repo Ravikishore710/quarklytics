@@ -1,0 +1,2 @@
+-- Compare live computation to the corresponding materialized view where a fair
+-- equivalent query exists. Record the comparison rather than assuming a win.

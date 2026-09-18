@@ -1,0 +1,3 @@
+-- Loading is performed by scripts/database/load_raw.py using COPY with HEADER.
+-- Keeping COPY orchestration in Python avoids hard-coded personal paths while
+-- preserving the raw layer as source-fidelity text tables.
