@@ -10,6 +10,11 @@
 
 > **Quarklytics** is an end-to-end, SQL-first analytics engineering and query performance platform built on the Brazilian E-Commerce Public Dataset by Olist (1.1M+ records, 9 relational entities). It implements a production-grade **3-tier Medallion & Kimball Star Schema architecture**, a **42-query advanced SQL analytical curriculum**, rigorous **`EXPLAIN (ANALYZE, BUFFERS)` query performance benchmarks** yielding up to **148x speedup**, and an interactive, glassmorphic **Analytics Studio Web Application** powered by FastAPI and Chart.js.
 
+<div align="center">
+  <img src="docs/images/studio_preview.png" alt="Quarklytics Executive Analytics Studio Preview" width="95%" style="border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.6);" />
+  <p align="center"><sub><em>Quarklytics Executive Analytics Studio — Live PostgreSQL 16 execution console, Glassmorphic KPI scorecards, and Natural Language Query Assistant.</em></sub></p>
+</div>
+
 ---
 
 ## 🏛️ System Architecture
@@ -165,7 +170,7 @@ cd quarklytics
 
 # Setup virtual environment
 python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scriptsctivate
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
@@ -222,6 +227,8 @@ quarklytics/
 │   └── raw/                       # Full Olist CSV storage (ignored by Git)
 ├── docs/                          # Comprehensive technical documentation
 │   ├── architecture.md            # System architecture & dimensional design
+│   ├── images/                    # UI previews & architecture assets
+│   │   └── studio_preview.png     # Full-resolution Web Studio preview
 │   ├── metric_definitions.md      # Official business metric catalog
 │   ├── query_optimization.md      # EXPLAIN ANALYZE deep dive & buffer statistics
 │   ├── data_quality.md            # Validation rules & anomaly mitigation
